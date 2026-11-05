@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use std::path::PathBuf;
 
 use eframe::egui::{self, vec2, Color32, Stroke, Style, Visuals};
@@ -158,7 +160,9 @@ fn main() -> eframe::Result<()> {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size(vec2(width, height))
             .with_min_inner_size(vec2(500.0, 350.0))
-            .with_title("Everything"),
+            .with_title("Everything")
+            .with_active(true)
+            .with_visible(true),
         ..Default::default()
     };
 
@@ -182,6 +186,18 @@ pub use settings::I18n;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_font_loading() {
+        let ctx = egui::Context::default();
+        let settings = AppSettings::default();
+        apply_theme_and_scale(&ctx, &settings);
+        let _ = ctx.run(Default::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                ui.label("测试中文字体");
+            });
+        });
+    }
 
     #[test]
     fn test_engine_search() {

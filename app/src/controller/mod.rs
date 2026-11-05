@@ -49,6 +49,15 @@ impl AppController {
             }
         }
 
+        if model.is_indexing {
+            ctx.request_repaint_after(std::time::Duration::from_millis(150));
+        }
+        if model.tick_search_debounce() {
+            ctx.request_repaint();
+        } else if model.search_pending.is_some() {
+            ctx.request_repaint_after(std::time::Duration::from_millis(30));
+        }
+
         // Handle screenshot mode if active
         if let Some(ref target_path) = model.screenshot_path {
             model.frame_counter += 1;

@@ -96,14 +96,13 @@ impl AppView {
         Self::render_dialogs(model, controller, ctx);
     }
 
-    fn action_shortcut(model: &AppModel, id: ShortcutId, ctx: &Context, check: impl Fn(Modifiers, Key) -> bool) -> bool {
+    fn action_shortcut(model: &AppModel, id: ShortcutId, ctx: &Context, check: impl Fn(Modifiers, Key, &egui::InputState) -> bool) -> bool {
         let combo = model.settings.shortcut(id);
         if let Some((m, k)) = parse_shortcut(&combo) {
-            if ctx.input(|_i| check(m, k)) {
+            if ctx.input(|i| check(m, k, i)) {
                 return true;
             }
         }
-        // Built-in fallback for actions that should always work
         false
     }
 
@@ -116,71 +115,71 @@ impl AppView {
 
         let check = |m: Modifiers, k: Key, i: &egui::InputState| i.modifiers.matches_exact(m) && i.key_pressed(k);
 
-        if Self::action_shortcut(model, ShortcutId::FocusSearch, ctx, |m, k| ctx.input(|i| check(m, k, i))) {
+        if Self::action_shortcut(model, ShortcutId::FocusSearch, ctx, check) {
             ctx.memory_mut(|m| m.request_focus(egui::Id::new("main_search_box")));
         }
-        if Self::action_shortcut(model, ShortcutId::RefreshIndex, ctx, |m, k| ctx.input(|i| check(m, k, i))) {
+        if Self::action_shortcut(model, ShortcutId::RefreshIndex, ctx, check) {
             controller.start_background_indexing(model);
         }
-        if Self::action_shortcut(model, ShortcutId::Options, ctx, |m, k| ctx.input(|i| check(m, k, i))) {
+        if Self::action_shortcut(model, ShortcutId::Options, ctx, check) {
             model.show_options_dialog = true;
         }
-        if Self::action_shortcut(model, ShortcutId::CopyName, ctx, |m, k| ctx.input(|i| check(m, k, i))) {
+        if Self::action_shortcut(model, ShortcutId::CopyName, ctx, check) {
             if let Some(entry) = model.selected_entry() {
                 controller.copy_to_clipboard(&entry.name);
             }
         }
-        if Self::action_shortcut(model, ShortcutId::CopyPath, ctx, |m, k| ctx.input(|i| check(m, k, i))) {
+        if Self::action_shortcut(model, ShortcutId::CopyPath, ctx, check) {
             if let Some(entry) = model.selected_entry() {
                 controller.copy_to_clipboard(&entry.full_path);
             }
         }
-        if Self::action_shortcut(model, ShortcutId::OpenPath, ctx, |m, k| ctx.input(|i| check(m, k, i))) {
+        if Self::action_shortcut(model, ShortcutId::OpenPath, ctx, check) {
             if let Some(entry) = model.selected_entry() {
                 controller.open_containing_folder(&entry.full_path);
             }
         }
-        if Self::action_shortcut(model, ShortcutId::ToggleMatchCase, ctx, |m, k| ctx.input(|i| check(m, k, i))) {
+        if Self::action_shortcut(model, ShortcutId::ToggleMatchCase, ctx, check) {
             model.search_options.match_case = !model.search_options.match_case;
             model.force_execute_search();
         }
-        if Self::action_shortcut(model, ShortcutId::ToggleMatchPath, ctx, |m, k| ctx.input(|i| check(m, k, i))) {
+        if Self::action_shortcut(model, ShortcutId::ToggleMatchPath, ctx, check) {
             model.search_options.match_path = !model.search_options.match_path;
             model.force_execute_search();
         }
-        if Self::action_shortcut(model, ShortcutId::ToggleMatchWord, ctx, |m, k| ctx.input(|i| check(m, k, i))) {
+        if Self::action_shortcut(model, ShortcutId::ToggleMatchWord, ctx, check) {
             model.search_options.match_whole_word = !model.search_options.match_whole_word;
             model.force_execute_search();
         }
-        if Self::action_shortcut(model, ShortcutId::ToggleRegex, ctx, |m, k| ctx.input(|i| check(m, k, i))) {
+        if Self::action_shortcut(model, ShortcutId::ToggleRegex, ctx, check) {
             model.search_options.match_regex = !model.search_options.match_regex;
             model.force_execute_search();
         }
-        if Self::action_shortcut(model, ShortcutId::AddBookmark, ctx, |m, k| ctx.input(|i| check(m, k, i))) {
+        if Self::action_shortcut(model, ShortcutId::AddBookmark, ctx, check) {
             model.show_bookmarks_dialog = true;
         }
-        if Self::action_shortcut(model, ShortcutId::Open, ctx, |m, k| ctx.input(|i| check(m, k, i))) {
+        if Self::action_shortcut(model, ShortcutId::Open, ctx, check) {
             if let Some(entry) = model.selected_entry() {
                 controller.open_entry(entry);
             }
         }
 
         // Zoom shortcuts (Ctrl+= / Ctrl+- / Ctrl+0 / Ctrl+wheel, like Everything)
-        if Self::action_shortcut(model, ShortcutId::ZoomIn, ctx, |m, k| ctx.input(|i| check(m, k, i)))
+        if Self::action_shortcut(model, ShortcutId::ZoomIn, ctx, check)
             || ctx.input(|i| i.modifiers.ctrl && i.key_pressed(Key::Equals))
         {
             model.settings.zoom_percent = (model.settings.zoom_percent + 10.0).min(300.0);
             model.settings_dirty = true;
             model.needs_resave = true;
         }
-        if Self::action_shortcut(model, ShortcutId::ZoomOut, ctx, |m, k| ctx.input(|i| check(m, k, i)))
+        if Self::action_shortcut(model, ShortcutId::ZoomOut, ctx, check)
             || ctx.input(|i| i.modifiers.ctrl && i.key_pressed(Key::Minus))
         {
             model.settings.zoom_percent = (model.settings.zoom_percent - 10.0).max(50.0);
             model.settings_dirty = true;
             model.needs_resave = true;
         }
-        if Self::action_shortcut(model, ShortcutId::ZoomReset, ctx, |m, k| ctx.input(|i| check(m, k, i)))
+        if Self::action_shortcut(model, ShortcutId::ZoomReset, ctx, check)
             || ctx.input(|i| i.modifiers.ctrl && i.key_pressed(Key::Num0))
         {
             model.settings.zoom_percent = 100.0;

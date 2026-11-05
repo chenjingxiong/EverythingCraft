@@ -265,7 +265,8 @@ fn parse_token(token: &str, options: &SearchOptions) -> Option<Condition> {
 
     // Prefix-based filters: ext:
     if let Some(rest) = lower.strip_prefix("ext:") {
-        let exts: Vec<String> = rest
+        let clean = rest.trim_matches('"').trim();
+        let exts: Vec<String> = clean
             .split(';')
             .map(|s| s.trim().trim_start_matches('.').to_string())
             .filter(|s| !s.is_empty())
@@ -275,28 +276,32 @@ fn parse_token(token: &str, options: &SearchOptions) -> Option<Condition> {
 
     // Prefix-based filters: size:
     if let Some(rest) = lower.strip_prefix("size:") {
-        if let Some(sf) = parse_size_filter(rest) {
+        let clean = rest.trim_matches('"').trim();
+        if let Some(sf) = parse_size_filter(clean) {
             return Some(Condition::Size(sf));
         }
     }
 
     // Prefix-based filters: dm: (Date Modified)
     if let Some(rest) = lower.strip_prefix("dm:") {
-        if let Some(df) = parse_date_filter(rest) {
+        let clean = rest.trim_matches('"').trim();
+        if let Some(df) = parse_date_filter(clean) {
             return Some(Condition::DateModified(df));
         }
     }
 
     // Prefix-based filters: dc: (Date Created)
     if let Some(rest) = lower.strip_prefix("dc:") {
-        if let Some(df) = parse_date_filter(rest) {
+        let clean = rest.trim_matches('"').trim();
+        if let Some(df) = parse_date_filter(clean) {
             return Some(Condition::DateCreated(df));
         }
     }
 
     // Prefix-based filters: path:
     if let Some(rest) = token.strip_prefix("path:") {
-        return Some(Condition::PathContains(rest.to_string()));
+        let clean = rest.trim_matches('"').trim();
+        return Some(Condition::PathContains(clean.to_string()));
     }
 
     // Prefix-based filters: regex:

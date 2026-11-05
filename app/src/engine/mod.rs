@@ -79,51 +79,59 @@ impl EverythingEngine {
         self.cancel_indexing.store(false, Ordering::Relaxed);
 
         let drives = scanner::list_windows_drives();
-        let mut total_indexed = 0;
+        let total_indexed = Arc::new(std::sync::atomic::AtomicUsize::new(0));
 
-        for drive in &drives {
-            if self.cancel_indexing.load(Ordering::Relaxed) {
-                break;
-            }
+        std::thread::scope(|s| {
+            for drive in drives {
+                let cancel = self.cancel_indexing.clone();
+                let db = self.db.clone();
+                let total = total_indexed.clone();
 
-            // Attempt NTFS USN Journal first if drive is lettered (like C:\)
-            let mut scanned = false;
-            let drive_str = drive.to_string_lossy();
-            if let Some(letter) = drive_str.chars().next() {
-                if letter.is_ascii_alphabetic() {
-                    match ntfs::scan_volume_usn(letter) {
-                        Ok(usn_entries) => {
-                            let count = usn_entries.len();
-                            self.db.add_entries(usn_entries);
-                            total_indexed += count;
-                            scanned = true;
-                        }
-                        Err(_) => {
-                            // Non-admin or non-NTFS volume, will fallback below
+                s.spawn(move || {
+                    if cancel.load(Ordering::Relaxed) {
+                        return;
+                    }
+
+                    let drive_str = drive.to_string_lossy();
+                    let mut scanned = false;
+
+                    if let Some(letter) = drive_str.chars().next() {
+                        if letter.is_ascii_alphabetic() {
+                            match ntfs::scan_volume_usn(letter) {
+                                Ok(usn_entries) => {
+                                    let count = usn_entries.len();
+                                    db.add_entries(usn_entries);
+                                    total.fetch_add(count, Ordering::Relaxed);
+                                    scanned = true;
+                                }
+                                Err(_) => {
+                                    // Non-admin or non-NTFS volume, fallback below
+                                }
+                            }
                         }
                     }
-                }
-            }
 
-            // Fallback to batched filesystem scan
-            if !scanned {
-                let db = self.db.clone();
-                let counter = Arc::new(std::sync::atomic::AtomicU64::new(total_indexed as u64 + 1));
-                scanner::scan_single_root_batched(
-                    drive,
-                    self.cancel_indexing.clone(),
-                    counter,
-                    5000,
-                    |batch| {
-                        total_indexed += batch.len();
-                        db.add_entries(batch);
-                    },
-                );
+                    if !scanned && !cancel.load(Ordering::Relaxed) {
+                        let counter = Arc::new(std::sync::atomic::AtomicU64::new(1));
+                        let db_ref = db.clone();
+                        let total_ref = total.clone();
+                        scanner::scan_single_root_batched(
+                            &drive,
+                            cancel,
+                            counter,
+                            2000,
+                            |batch| {
+                                total_ref.fetch_add(batch.len(), Ordering::Relaxed);
+                                db_ref.add_entries(batch);
+                            },
+                        );
+                    }
+                });
             }
-        }
+        });
 
         self.is_indexing.store(false, Ordering::SeqCst);
-        Ok(total_indexed)
+        Ok(total_indexed.load(Ordering::Relaxed))
     }
 
     /// Index a specific directory path

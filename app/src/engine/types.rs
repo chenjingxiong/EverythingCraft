@@ -28,7 +28,9 @@ pub enum SortColumn {
     Path,
     Size,
     DateModified,
+    DateCreated,
     Extension,
+    Attributes,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

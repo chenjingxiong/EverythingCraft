@@ -1,6 +1,6 @@
 use chrono::{Local, TimeZone};
 use egui::{
-    vec2, Align, Align2, Color32, Context, Key, Layout, Modifiers, Rect, RichText, ScrollArea,
+    vec2, Align, Color32, Context, Key, Layout, Modifiers, Rect, RichText, ScrollArea,
     Sense, Ui,
 };
 
@@ -72,6 +72,65 @@ fn parse_shortcut(s: &str) -> Option<(Modifiers, Key)> {
     key.map(|k| (mods, k))
 }
 
+fn format_attributes(attrs: u32, is_dir: bool) -> String {
+    let mut s = String::with_capacity(6);
+    if is_dir {
+        s.push('D');
+    }
+    if (attrs & 0x01) != 0 {
+        s.push('R');
+    }
+    if (attrs & 0x02) != 0 {
+        s.push('H');
+    }
+    if (attrs & 0x04) != 0 {
+        s.push('S');
+    }
+    if (attrs & 0x20) != 0 {
+        s.push('A');
+    }
+    if (attrs & 0x800) != 0 {
+        s.push('C');
+    }
+    s
+}
+
+fn get_active_columns(cols: &crate::settings::ColumnSettings) -> Vec<(SortColumn, &'static str, f32)> {
+    let mut list = Vec::with_capacity(7);
+    list.push((SortColumn::Name, "col.name", cols.width_name));
+    if cols.show_path {
+        list.push((SortColumn::Path, "col.path", cols.width_path));
+    }
+    if cols.show_size {
+        list.push((SortColumn::Size, "col.size", cols.width_size));
+    }
+    if cols.show_modified {
+        list.push((SortColumn::DateModified, "col.modified", cols.width_modified));
+    }
+    if cols.show_created {
+        list.push((SortColumn::DateCreated, "col.created", cols.width_created));
+    }
+    if cols.show_extension {
+        list.push((SortColumn::Extension, "col.extension", cols.width_extension));
+    }
+    if cols.show_attributes {
+        list.push((SortColumn::Attributes, "col.attributes", cols.width_attributes));
+    }
+    list
+}
+
+fn adjust_column_width(cols: &mut crate::settings::ColumnSettings, col: SortColumn, delta: f32) {
+    match col {
+        SortColumn::Name => cols.width_name = (cols.width_name + delta).max(60.0),
+        SortColumn::Path => cols.width_path = (cols.width_path + delta).max(60.0),
+        SortColumn::Size => cols.width_size = (cols.width_size + delta).max(40.0),
+        SortColumn::DateModified => cols.width_modified = (cols.width_modified + delta).max(60.0),
+        SortColumn::DateCreated => cols.width_created = (cols.width_created + delta).max(60.0),
+        SortColumn::Extension => cols.width_extension = (cols.width_extension + delta).max(40.0),
+        SortColumn::Attributes => cols.width_attributes = (cols.width_attributes + delta).max(40.0),
+    }
+}
+
 impl AppView {
     pub fn render(model: &mut AppModel, controller: &mut AppController, ctx: &Context) {
         Self::handle_shortcuts(model, controller, ctx);
@@ -92,6 +151,19 @@ impl AppView {
         egui::CentralPanel::default().show(ctx, |ui| {
             Self::render_results_table(model, controller, ui);
         });
+
+        if model.settings.show_path_in_title {
+            let title = if let Some(entry) = model.selected_entry() {
+                format!("{} - Everything", entry.full_path)
+            } else if !model.search_query.is_empty() {
+                format!("{} - Everything", model.search_query)
+            } else {
+                "Everything".to_string()
+            };
+            ctx.send_viewport_cmd(egui::ViewportCommand::Title(title));
+        } else {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Title("Everything".to_string()));
+        }
 
         Self::render_dialogs(model, controller, ctx);
     }
@@ -292,6 +364,47 @@ impl AppView {
                 if ui.checkbox(&mut model.settings.show_header, &t_header).changed() {
                     model.needs_resave = true;
                 }
+                let t_alt = model.t("view.alternate_row").to_string();
+                if ui.checkbox(&mut model.settings.alternate_row_color, &t_alt).changed() {
+                    model.needs_resave = true;
+                }
+                let t_icons = model.t("view.show_icons").to_string();
+                if ui.checkbox(&mut model.settings.show_icons, &t_icons).changed() {
+                    model.needs_resave = true;
+                }
+                ui.separator();
+                ui.menu_button(model.t("view.columns"), |ui| {
+                    let t_path = model.t("col.path");
+                    let t_size = model.t("col.size");
+                    let t_mod = model.t("col.modified");
+                    let t_crt = model.t("col.created");
+                    let t_ext = model.t("col.extension");
+                    let t_attr = model.t("col.attributes");
+                    if ui.checkbox(&mut model.settings.columns.show_path, t_path).changed() {
+                        model.needs_resave = true;
+                    }
+                    if ui.checkbox(&mut model.settings.columns.show_size, t_size).changed() {
+                        model.needs_resave = true;
+                    }
+                    if ui.checkbox(&mut model.settings.columns.show_modified, t_mod).changed() {
+                        model.needs_resave = true;
+                    }
+                    if ui.checkbox(&mut model.settings.columns.show_created, t_crt).changed() {
+                        model.needs_resave = true;
+                    }
+                    if ui.checkbox(&mut model.settings.columns.show_extension, t_ext).changed() {
+                        model.needs_resave = true;
+                    }
+                    if ui.checkbox(&mut model.settings.columns.show_attributes, t_attr).changed() {
+                        model.needs_resave = true;
+                    }
+                    ui.separator();
+                    if ui.button(model.t("opt.reset_columns")).clicked() {
+                        model.settings.columns = crate::settings::ColumnSettings::default();
+                        model.needs_resave = true;
+                        ui.close_menu();
+                    }
+                });
                 ui.separator();
                 if ui.button(format!("{}  (+10%)", model.t("view.zoom_in"))).clicked() {
                     model.settings.zoom_percent = (model.settings.zoom_percent + 10.0).min(400.0);
@@ -367,18 +480,21 @@ impl AppView {
                     controller.start_background_indexing(model);
                     ui.close_menu();
                 }
-                if ui.button("Load Preloaded System Samples").clicked() {
-                    model.load_seed_samples();
+                if !AppController::is_elevated() {
+                    if ui.button(format!("🛡 {}", model.t("tools.run_as_admin"))).clicked() {
+                        AppController::restart_as_admin();
+                    }
+                } else {
+                    let _ = ui.button(RichText::new(format!("🛡 {}", model.t("tools.is_admin"))).color(Color32::from_rgb(0, 180, 0)));
+                }
+                ui.separator();
+                if ui.button(format!("{}\t{}", model.t("menu.options"), model.settings.shortcut(ShortcutId::Options))).clicked() {
+                    model.show_options_dialog = true;
                     ui.close_menu();
                 }
             });
 
             ui.menu_button(model.t("menu.help"), |ui| {
-                if ui.button(model.t("menu.options")).clicked() {
-                    model.show_options_dialog = true;
-                    ui.close_menu();
-                }
-                ui.separator();
                 if ui.button(model.t("help.about")).clicked() {
                     model.show_about_dialog = true;
                     ui.close_menu();
@@ -475,53 +591,87 @@ impl AppView {
         let text_height = egui::TextStyle::Body.resolve(ui.style()).size;
         let row_height = text_height + 8.0;
 
+        let active_cols = get_active_columns(&model.settings.columns);
+        let total_col_width: f32 = active_cols.iter().map(|(_, _, w)| w + 6.0).sum();
+
         if model.settings.show_header {
-            ui.horizontal(|ui| {
-                let sort_col = model.search_options.sort_column;
-                let sort_dir = model.search_options.sort_direction;
+            let sort_col = model.search_options.sort_column;
+            let sort_dir = model.search_options.sort_direction;
 
-                let make_header = |title: &str, col: SortColumn| -> String {
-                    let arrow = if sort_col == col {
-                        match sort_dir {
-                            SortDirection::Ascending => " ▲",
-                            SortDirection::Descending => " ▼",
-                        }
-                    } else {
-                        ""
-                    };
-                    format!("{}{}", title, arrow)
+            let make_header = |title: &str, col: SortColumn| -> String {
+                let arrow = if sort_col == col {
+                    match sort_dir {
+                        SortDirection::Ascending => " ▲",
+                        SortDirection::Descending => " ▼",
+                    }
+                } else {
+                    ""
                 };
+                format!("{}{}", title, arrow)
+            };
 
-                if ui.add(egui::Button::new(RichText::new(make_header(&model.t("col.name"), SortColumn::Name)).strong())
-                    .min_size(vec2(320.0, 24.0)))
-                    .clicked()
-                {
-                    model.toggle_sort(SortColumn::Name);
+            let header_resp = ui.horizontal(|ui| {
+                for (col, label_key, width) in &active_cols {
+                    let title = make_header(&model.t(label_key), *col);
+                    let btn = egui::Button::new(RichText::new(title).strong().size(12.0))
+                        .min_size(vec2(*width, 22.0));
+
+                    if ui.add(btn).clicked() {
+                        model.toggle_sort(*col);
+                    }
+
+                    // Draggable resize divider
+                    let (sep_rect, sep_resp) = ui.allocate_exact_size(vec2(6.0, 22.0), Sense::click_and_drag());
+                    if sep_resp.hovered() || sep_resp.dragged() {
+                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                        ui.painter().vline(sep_rect.center().x, sep_rect.y_range(), egui::Stroke::new(2.0, Color32::from_rgb(0, 120, 215)));
+                    } else {
+                        ui.painter().vline(sep_rect.center().x, sep_rect.y_range(), egui::Stroke::new(1.0, ui.visuals().widgets.noninteractive.bg_stroke.color));
+                    }
+                    if sep_resp.dragged() {
+                        let delta = sep_resp.drag_delta().x;
+                        adjust_column_width(&mut model.settings.columns, *col, delta);
+                        model.needs_resave = true;
+                    }
                 }
+            }).response;
 
-                let avail_w = ui.available_width() - 320.0;
-                let path_w = (avail_w - 20.0).max(200.0);
-                if ui.add(egui::Button::new(RichText::new(make_header(&model.t("col.path"), SortColumn::Path)).strong())
-                    .min_size(vec2(path_w, 24.0)))
-                    .clicked()
-                {
-                    model.toggle_sort(SortColumn::Path);
+            // Header right-click context menu to select visible columns
+            header_resp.context_menu(|ui| {
+                ui.label(RichText::new(model.t("opt.columns")).strong());
+                ui.separator();
+                let t_path = model.t("col.path");
+                let t_size = model.t("col.size");
+                let t_mod = model.t("col.modified");
+                let t_crt = model.t("col.created");
+                let t_ext = model.t("col.extension");
+                let t_attr = model.t("col.attributes");
+                if ui.checkbox(&mut model.settings.columns.show_path, t_path).changed() {
+                    model.needs_resave = true;
                 }
-
-                if ui.add(egui::Button::new(RichText::new(make_header(&model.t("col.size"), SortColumn::Size)).strong())
-                    .min_size(vec2(120.0, 24.0)))
-                    .clicked()
-                {
-                    model.toggle_sort(SortColumn::Size);
+                if ui.checkbox(&mut model.settings.columns.show_size, t_size).changed() {
+                    model.needs_resave = true;
                 }
-
-                if ui.add(egui::Button::new(RichText::new(make_header(&model.t("col.modified"), SortColumn::DateModified)).strong())
-                    .min_size(vec2(160.0, 24.0)))
-                    .clicked()
-                {
-                    model.toggle_sort(SortColumn::DateModified);
+                if ui.checkbox(&mut model.settings.columns.show_modified, t_mod).changed() {
+                    model.needs_resave = true;
+                }
+                if ui.checkbox(&mut model.settings.columns.show_created, t_crt).changed() {
+                    model.needs_resave = true;
+                }
+                if ui.checkbox(&mut model.settings.columns.show_extension, t_ext).changed() {
+                    model.needs_resave = true;
+                }
+                if ui.checkbox(&mut model.settings.columns.show_attributes, t_attr).changed() {
+                    model.needs_resave = true;
+                }
+                ui.separator();
+                if ui.button(model.t("opt.reset_columns")).clicked() {
+                    model.settings.columns = crate::settings::ColumnSettings::default();
+                    model.needs_resave = true;
+                    ui.close_menu();
                 }
             });
+
             ui.separator();
         }
 
@@ -546,9 +696,12 @@ impl AppView {
         let mut row_to_copy_name: Option<String> = None;
         let mut row_clicked: Option<usize> = None;
 
-        ScrollArea::vertical()
+        ScrollArea::both()
             .auto_shrink([false; 2])
             .show_rows(ui, row_height, total_rows, |ui, row_range| {
+                let row_width = ui.available_width().max(total_col_width);
+                ui.set_min_width(row_width);
+
                 for row_idx in row_range {
                     let Some(entry) = model.search_results.get(row_idx) else {
                         continue;
@@ -557,18 +710,24 @@ impl AppView {
                     let entry = entry.clone();
 
                     let (rect, resp) = ui.allocate_exact_size(
-                        vec2(ui.available_width(), row_height),
+                        vec2(row_width, row_height),
                         Sense::click(),
                     );
 
                     if is_selected {
-                        ui.painter().rect_filled(rect, 2.0, Color32::from_rgb(0, 120, 215));
+                        ui.painter().rect_filled(rect, 0.0, Color32::from_rgb(0, 120, 215));
                     } else if resp.hovered() {
                         ui.painter().rect_filled(
                             rect,
-                            2.0,
-                            Color32::from_rgba_unmultiplied(200, 220, 245, 60),
+                            0.0,
+                            Color32::from_rgba_unmultiplied(200, 220, 245, 40),
                         );
+                    } else if model.settings.alternate_row_color && row_idx % 2 == 1 {
+                        let alt_bg = match model.settings.theme {
+                            Theme::Dark => Color32::from_rgb(18, 18, 18),
+                            Theme::Light => Color32::from_rgb(243, 245, 248),
+                        };
+                        ui.painter().rect_filled(rect, 0.0, alt_bg);
                     }
 
                     if resp.clicked() {
@@ -598,47 +757,79 @@ impl AppView {
                         }
                     });
 
-                    let icon = if entry.is_dir {
-                        "📁"
-                    } else {
-                        match entry.extension.as_str() {
-                            "exe" | "msi" | "bat" | "cmd" => "⚙",
-                            "png" | "jpg" | "jpeg" | "gif" | "bmp" | "webp" => "🖼",
-                            "mp3" | "wav" | "flac" | "ogg" => "🎵",
-                            "mp4" | "mkv" | "avi" | "mov" => "🎬",
-                            "zip" | "7z" | "rar" | "tar" | "gz" => "📦",
-                            "pdf" | "doc" | "docx" => "📄",
-                            _ => "🗎",
-                        }
-                    };
-
                     let text_color = if is_selected {
                         Color32::WHITE
                     } else {
                         ui.visuals().text_color()
                     };
 
-                    let name_display = format!("{} {}", icon, entry.name);
-                    let size_display = if entry.is_dir {
-                        String::new()
-                    } else {
-                        format_size_for(entry.size, model.settings.size_format)
-                    };
-                    let date_display = format_unix_timestamp(entry.modified, &model.settings.date_format);
-
                     let font_id = egui::TextStyle::Body.resolve(ui.style());
 
-                    let name_rect = Rect::from_min_size(rect.min + vec2(4.0, 4.0), vec2(316.0, row_height));
-                    ui.painter().text(name_rect.min, Align2::LEFT_TOP, name_display, font_id.clone(), text_color);
+                    let mut x_offset = rect.min.x + 4.0;
 
-                    let path_rect = Rect::from_min_size(rect.min + vec2(328.0, 4.0), vec2(ui.available_width() - 610.0, row_height));
-                    ui.painter().text(path_rect.min, Align2::LEFT_TOP, &entry.path, font_id.clone(), text_color);
+                    for (col, _, width) in &active_cols {
+                        let cell_w = (width - 4.0).max(10.0);
+                        let cell_rect = Rect::from_min_size(egui::pos2(x_offset, rect.min.y), vec2(cell_w, row_height));
 
-                    let size_rect = Rect::from_min_size(rect.max - vec2(280.0, row_height - 4.0), vec2(110.0, row_height));
-                    ui.painter().text(size_rect.max, Align2::RIGHT_BOTTOM, size_display, font_id.clone(), text_color);
+                        match col {
+                            SortColumn::Name => {
+                                let name_text = if model.settings.show_icons {
+                                    let icon = if entry.is_dir {
+                                        "📁"
+                                    } else {
+                                        match entry.extension.as_str() {
+                                            "exe" | "msi" | "bat" | "cmd" => "⚙",
+                                            "png" | "jpg" | "jpeg" | "gif" | "bmp" | "webp" => "🖼",
+                                            "mp3" | "wav" | "flac" | "ogg" => "🎵",
+                                            "mp4" | "mkv" | "avi" | "mov" => "🎬",
+                                            "zip" | "7z" | "rar" | "tar" | "gz" => "📦",
+                                            "pdf" | "doc" | "docx" | "txt" | "md" => "📄",
+                                            _ => "🗎",
+                                        }
+                                    };
+                                    format!("{} {}", icon, entry.name)
+                                } else {
+                                    entry.name.clone()
+                                };
+                                let galley = ui.painter().layout_no_wrap(name_text, font_id.clone(), text_color);
+                                ui.painter().with_clip_rect(cell_rect).galley(cell_rect.min + vec2(0.0, 3.0), galley, text_color);
+                            }
+                            SortColumn::Path => {
+                                let galley = ui.painter().layout_no_wrap(entry.path.clone(), font_id.clone(), text_color);
+                                ui.painter().with_clip_rect(cell_rect).galley(cell_rect.min + vec2(0.0, 3.0), galley, text_color);
+                            }
+                            SortColumn::Size => {
+                                if !entry.is_dir {
+                                    let size_str = format_size_for(entry.size, model.settings.size_format);
+                                    let galley = ui.painter().layout_no_wrap(size_str, font_id.clone(), text_color);
+                                    let galley_w = galley.size().x;
+                                    let text_pos = egui::pos2((cell_rect.max.x - galley_w).max(cell_rect.min.x), cell_rect.min.y + 3.0);
+                                    ui.painter().with_clip_rect(cell_rect).galley(text_pos, galley, text_color);
+                                }
+                            }
+                            SortColumn::DateModified => {
+                                let mod_str = format_unix_timestamp(entry.modified, &model.settings.date_format);
+                                let galley = ui.painter().layout_no_wrap(mod_str, font_id.clone(), text_color);
+                                ui.painter().with_clip_rect(cell_rect).galley(cell_rect.min + vec2(0.0, 3.0), galley, text_color);
+                            }
+                            SortColumn::DateCreated => {
+                                let crt_str = format_unix_timestamp(entry.created, &model.settings.date_format);
+                                let galley = ui.painter().layout_no_wrap(crt_str, font_id.clone(), text_color);
+                                ui.painter().with_clip_rect(cell_rect).galley(cell_rect.min + vec2(0.0, 3.0), galley, text_color);
+                            }
+                            SortColumn::Extension => {
+                                let galley = ui.painter().layout_no_wrap(entry.extension.clone(), font_id.clone(), text_color);
+                                ui.painter().with_clip_rect(cell_rect).galley(cell_rect.min + vec2(0.0, 3.0), galley, text_color);
+                            }
+                            SortColumn::Attributes => {
+                                let attr_str = format_attributes(entry.attributes, entry.is_dir);
+                                let galley = ui.painter().layout_no_wrap(attr_str, font_id.clone(), text_color);
+                                ui.painter().with_clip_rect(cell_rect).galley(cell_rect.min + vec2(0.0, 3.0), galley, text_color);
+                            }
+                        }
 
-                    let date_rect = Rect::from_min_size(rect.max - vec2(160.0, row_height - 4.0), vec2(150.0, row_height));
-                    ui.painter().text(date_rect.min, Align2::LEFT_TOP, date_display, font_id.clone(), text_color);
+                        x_offset += width + 6.0;
+                    }
                 }
             });
 
@@ -888,6 +1079,17 @@ impl AppView {
         if (model.settings.zoom_percent - prev_zoom).abs() > 0.01 {
             model.settings_dirty = true;
         }
+        ui.add_space(8.0);
+        ui.separator();
+        ui.add_space(4.0);
+        if AppController::is_elevated() {
+            ui.label(RichText::new(format!("🛡 {}", model.t("tools.is_admin"))).color(Color32::from_rgb(0, 180, 0)));
+        } else {
+            ui.label(model.t("opt.run_as_admin_desc"));
+            if ui.button(format!("🛡 {}", model.t("opt.restart_as_admin"))).clicked() {
+                AppController::restart_as_admin();
+            }
+        }
         ui.add_space(4.0);
         ui.small(model.t("opt.restart_hint"));
     }
@@ -983,8 +1185,32 @@ impl AppView {
         ui.checkbox(&mut model.settings.show_header, &t2);
         let t3 = model.t("opt.alternate_row").to_string();
         ui.checkbox(&mut model.settings.alternate_row_color, &t3);
-        ui.add_space(8.0);
+        let t_icons = model.t("opt.show_icons").to_string();
+        ui.checkbox(&mut model.settings.show_icons, t_icons);
+        let t_title = model.t("opt.show_path_in_title").to_string();
+        ui.checkbox(&mut model.settings.show_path_in_title, t_title);
 
+        ui.add_space(8.0);
+        ui.label(RichText::new(model.t("opt.columns")).strong());
+        let t_path = model.t("col.path");
+        let t_size = model.t("col.size");
+        let t_mod = model.t("col.modified");
+        let t_crt = model.t("col.created");
+        let t_ext = model.t("col.extension");
+        let t_attr = model.t("col.attributes");
+        ui.horizontal_wrapped(|ui| {
+            ui.checkbox(&mut model.settings.columns.show_path, t_path);
+            ui.checkbox(&mut model.settings.columns.show_size, t_size);
+            ui.checkbox(&mut model.settings.columns.show_modified, t_mod);
+            ui.checkbox(&mut model.settings.columns.show_created, t_crt);
+            ui.checkbox(&mut model.settings.columns.show_extension, t_ext);
+            ui.checkbox(&mut model.settings.columns.show_attributes, t_attr);
+        });
+        if ui.button(model.t("opt.reset_columns")).clicked() {
+            model.settings.columns = crate::settings::ColumnSettings::default();
+        }
+
+        ui.add_space(8.0);
         ui.label(model.t("opt.size_format"));
         egui::ComboBox::from_id_salt("opt_size_format")
             .selected_text(match model.settings.size_format {

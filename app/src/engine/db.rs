@@ -257,7 +257,9 @@ impl Database {
                 }
                 SortColumn::Size => a.size.cmp(&b.size),
                 SortColumn::DateModified => a.modified.cmp(&b.modified),
+                SortColumn::DateCreated => a.created.cmp(&b.created),
                 SortColumn::Extension => compare_ignore_case(&a.extension, &b.extension),
+                SortColumn::Attributes => a.attributes.cmp(&b.attributes),
             };
 
             match sort_dir {

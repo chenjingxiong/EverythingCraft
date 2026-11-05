@@ -188,6 +188,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_usn_scan() {
+        match engine::ntfs::scan_volume_usn('C') {
+            Ok(entries) => println!("USN scanned C: {} entries", entries.len()),
+            Err(e) => println!("USN scan failed: {}", e),
+        }
+    }
+
+    #[test]
     fn test_font_loading() {
         let ctx = egui::Context::default();
         let settings = AppSettings::default();

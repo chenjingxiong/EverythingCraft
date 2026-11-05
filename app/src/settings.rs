@@ -165,6 +165,46 @@ pub enum SizeFormat {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
+pub struct ColumnSettings {
+    pub show_name: bool,
+    pub show_path: bool,
+    pub show_size: bool,
+    pub show_modified: bool,
+    pub show_created: bool,
+    pub show_extension: bool,
+    pub show_attributes: bool,
+    pub width_name: f32,
+    pub width_path: f32,
+    pub width_size: f32,
+    pub width_modified: f32,
+    pub width_created: f32,
+    pub width_extension: f32,
+    pub width_attributes: f32,
+}
+
+impl Default for ColumnSettings {
+    fn default() -> Self {
+        Self {
+            show_name: true,
+            show_path: true,
+            show_size: true,
+            show_modified: true,
+            show_created: false,
+            show_extension: false,
+            show_attributes: false,
+            width_name: 300.0,
+            width_path: 380.0,
+            width_size: 110.0,
+            width_modified: 150.0,
+            width_created: 150.0,
+            width_extension: 80.0,
+            width_attributes: 80.0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct AppSettings {
     pub language: Option<Language>, // None = follow OS
     pub theme: Theme,
@@ -182,8 +222,11 @@ pub struct AppSettings {
     pub show_status_bar: bool,
     pub show_header: bool,
     pub alternate_row_color: bool,
+    pub show_icons: bool,
+    pub show_path_in_title: bool,
     pub date_format: String,
     pub size_format: SizeFormat,
+    pub columns: ColumnSettings,
     // Window
     pub window_width: f32,
     pub window_height: f32,
@@ -212,8 +255,11 @@ impl Default for AppSettings {
             show_status_bar: true,
             show_header: true,
             alternate_row_color: true,
+            show_icons: true,
+            show_path_in_title: true,
             date_format: "%Y/%m/%d %H:%M".to_string(),
             size_format: SizeFormat::Human,
+            columns: ColumnSettings::default(),
             window_width: 1022.0,
             window_height: 713.0,
             window_maximized: false,
@@ -356,6 +402,19 @@ impl I18n {
             "col.path" => "Path".into(),
             "col.size" => "Size".into(),
             "col.modified" => "Date Modified".into(),
+            "col.created" => "Date Created".into(),
+            "col.extension" => "Extension".into(),
+            "col.attributes" => "Attributes".into(),
+            "view.columns" => "Columns".into(),
+            "view.show_icons" => "Show Icons".into(),
+            "opt.show_icons" => "Show icons next to files and folders".into(),
+            "opt.show_path_in_title" => "Show full path in window title".into(),
+            "opt.columns" => "Columns".into(),
+            "opt.reset_columns" => "Reset Column Widths".into(),
+            "tools.run_as_admin" => "Run as administrator".into(),
+            "tools.is_admin" => "Running as administrator".into(),
+            "opt.run_as_admin_desc" => "NTFS USN Journal indexing requires administrator privileges.".into(),
+            "opt.restart_as_admin" => "Restart as Administrator".into(),
             "opt.title" => "Options".into(),
             "opt.general" => "General".into(),
             "opt.language" => "Language".into(),
@@ -453,6 +512,19 @@ impl I18n {
             "col.path" => "路径".into(),
             "col.size" => "大小".into(),
             "col.modified" => "修改时间".into(),
+            "col.created" => "创建时间".into(),
+            "col.extension" => "扩展名".into(),
+            "col.attributes" => "属性".into(),
+            "view.columns" => "选取列".into(),
+            "view.show_icons" => "显示图标".into(),
+            "opt.show_icons" => "显示文件和文件夹图标".into(),
+            "opt.show_path_in_title" => "在窗口标题栏显示完整路径".into(),
+            "opt.columns" => "显示的列".into(),
+            "opt.reset_columns" => "恢复默认列宽".into(),
+            "tools.run_as_admin" => "以管理员身份运行".into(),
+            "tools.is_admin" => "已以管理员身份运行".into(),
+            "opt.run_as_admin_desc" => "NTFS USN 日志直接读取 MFT 需要管理员权限。".into(),
+            "opt.restart_as_admin" => "以管理员身份重启".into(),
             "opt.title" => "选项".into(),
             "opt.general" => "常规".into(),
             "opt.language" => "语言 (Language)".into(),

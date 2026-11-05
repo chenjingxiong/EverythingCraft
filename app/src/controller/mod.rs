@@ -217,6 +217,47 @@ impl AppController {
             }
         }
     }
+
+    #[cfg(windows)]
+    pub fn is_elevated() -> bool {
+        #[link(name = "shell32")]
+        extern "system" {
+            fn IsUserAnAdmin() -> i32;
+        }
+        unsafe { IsUserAnAdmin() != 0 }
+    }
+
+    #[cfg(not(windows))]
+    pub fn is_elevated() -> bool {
+        false
+    }
+
+    pub fn restart_as_admin() {
+        #[cfg(windows)]
+        {
+            use std::ffi::OsStr;
+            use std::os::windows::ffi::OsStrExt;
+            #[link(name = "shell32")]
+            extern "system" {
+                fn ShellExecuteW(
+                    hwnd: isize,
+                    lpoperation: *const u16,
+                    lpfile: *const u16,
+                    lpparameters: *const u16,
+                    lpdirectory: *const u16,
+                    nshowcmd: i32,
+                ) -> isize;
+            }
+            if let Ok(exe) = std::env::current_exe() {
+                let exe_wide: Vec<u16> = exe.as_os_str().encode_wide().chain(std::iter::once(0)).collect();
+                let op_wide: Vec<u16> = OsStr::new("runas").encode_wide().chain(std::iter::once(0)).collect();
+                unsafe {
+                    ShellExecuteW(0, op_wide.as_ptr(), exe_wide.as_ptr(), std::ptr::null(), std::ptr::null(), 1);
+                }
+                std::process::exit(0);
+            }
+        }
+    }
 }
 
 fn dirs_or_fallback() -> PathBuf {

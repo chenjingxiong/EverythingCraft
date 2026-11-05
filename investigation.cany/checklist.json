@@ -1,0 +1,29 @@
+{
+  "todos": [
+    {
+      "content": "Rebuild Everything desktop app with MVC architecture in Rust (eframe/egui)",
+      "status": "completed",
+      "activeForm": "Rebuilding Everything app"
+    },
+    {
+      "content": "Implement NTFS USN Journal scanner & fast fallback scanner",
+      "status": "completed",
+      "activeForm": "Implementing search engine"
+    },
+    {
+      "content": "Implement Everything query syntax, boolean filters, categories, regex",
+      "status": "completed",
+      "activeForm": "Implementing query parser"
+    },
+    {
+      "content": "Implement --screenshot flag and automated likeness verification",
+      "status": "completed",
+      "activeForm": "Verifying UI screenshot"
+    },
+    {
+      "content": "Integrate search core engine directly into files-explorer",
+      "status": "completed",
+      "activeForm": "Integrating into files-explorer"
+    }
+  ]
+}

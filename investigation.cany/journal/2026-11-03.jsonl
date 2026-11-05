@@ -1,0 +1,27 @@
+{"caller":"ui","duration_ms":35,"evidence_id":"ev_9066c8c470c328b5c75318126b27b1530b2f1cf695cb38cc804718912d105b20","kind":"tool_call","ok":true,"params":{"path":"C:\\Program Files\\Everything 1.5a\\Everything.exe"},"time":"2026-11-03T09:38:22Z","tool":"core_target_triage","ts":1793698702}
+{"caller":"ui","duration_ms":3109,"evidence_id":"ev_eb063f79dc629877a630397769829342eafc2b4ad4d974e612d8c5e0608b8746","kind":"tool_call","ok":true,"params":{"output":"D:\\MyProjects\\EverythingCraft\\capture\\window.png","program":"C:\\Program Files\\Everything 1.5a\\Everything.exe","ui_tree":"D:\\MyProjects\\EverythingCraft\\capture\\ui-tree.json","wait_secs":15},"time":"2026-11-03T09:38:25Z","tool":"native_window_capture","ts":1793698705}
+{"caller":"ui","duration_ms":906,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T09:38:25Z","tool":"project_pins_list","ts":1793698705}
+{"caller":"ui","duration_ms":0,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T09:39:04Z","tool":"project_pins_list","ts":1793698744}
+{"caller":"ui","duration_ms":0,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T09:40:00Z","tool":"project_pins_list","ts":1793698800}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T09:40:50Z","tool":"project_pins_list","ts":1793698850}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T09:41:42Z","tool":"project_pins_list","ts":1793698902}
+{"caller":"ui","duration_ms":12,"kind":"tool_call","ok":true,"params":{"confirm":true,"project":"D:\\Stock_Option\\My-Finance-DataCenter\\Finance-DataCenter-V3.0\\Deltapex-Studio-V3.0"},"time":"2026-11-03T09:42:01Z","tool":"project_delete","ts":1793698921}
+{"caller":"ui","duration_ms":0,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T09:42:01Z","tool":"project_pins_list","ts":1793698921}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T09:42:16Z","tool":"project_pins_list","ts":1793698936}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T09:42:33Z","tool":"project_pins_list","ts":1793698953}
+{"caller":"cli","duration_ms":0,"error":"No project given.","error_code":"bad_input","kind":"tool_call","ok":false,"params":{},"time":"2026-11-03T09:43:11Z","tool":"rebuild_check","ts":1793698991}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T09:44:19Z","tool":"project_pins_list","ts":1793699059}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T09:44:27Z","tool":"project_pins_list","ts":1793699067}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T10:28:00Z","tool":"project_pins_list","ts":1793701680}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T10:28:12Z","tool":"project_pins_list","ts":1793701692}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T10:28:16Z","tool":"project_pins_list","ts":1793701696}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T10:28:28Z","tool":"project_pins_list","ts":1793701708}
+{"caller":"ui","duration_ms":15222,"evidence_id":"ev_ec995c8b0e03ce1d2202f623c0addb1b857b7c9611394b9dd56d9e09c7a57e3a","kind":"tool_call","ok":true,"params":{"args":[],"output":"D:\\MyProjects\\EverythingCraft\\checks\\round-0\\window.png","program":"D:\\MyProjects\\EverythingCraft\\app\\target\\debug\\everything-app.exe","wait_secs":15},"time":"2026-11-03T10:28:43Z","tool":"native_window_capture","ts":1793701723}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T10:28:46Z","tool":"project_pins_list","ts":1793701726}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T10:30:02Z","tool":"project_pins_list","ts":1793701802}
+{"caller":"ui","duration_ms":0,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T10:30:59Z","tool":"project_pins_list","ts":1793701859}
+{"caller":"ui","duration_ms":2,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T10:31:03Z","tool":"project_pins_list","ts":1793701863}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T10:32:05Z","tool":"project_pins_list","ts":1793701925}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T10:32:11Z","tool":"project_pins_list","ts":1793701931}
+{"caller":"ui","duration_ms":3,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T10:33:47Z","tool":"project_pins_list","ts":1793702027}
+{"caller":"ui","duration_ms":1,"kind":"tool_call","ok":true,"params":{},"time":"2026-11-03T10:43:19Z","tool":"project_pins_list","ts":1793702599}

@@ -1,0 +1,7 @@
+target/
+**/target/
+build-activity.log
+*.log
+Everything-Settings.json
+.DS_Store
+Thumbs.db

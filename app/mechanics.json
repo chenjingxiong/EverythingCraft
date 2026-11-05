@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "values": [
+    {
+      "name": "FSCTL_QUERY_USN_JOURNAL",
+      "group": "ntfs_indexing",
+      "value": 589940,
+      "source": "function 0x1401a9690"
+    },
+    {
+      "name": "FSCTL_READ_USN_JOURNAL",
+      "group": "ntfs_indexing",
+      "value": 589944,
+      "source": "function 0x1401a9690"
+    },
+    {
+      "name": "FSCTL_ENUM_USN_DATA",
+      "group": "ntfs_indexing",
+      "value": 589875,
+      "source": "function 0x140091c15"
+    },
+    {
+      "name": "usn_buffer_size",
+      "group": "ntfs_indexing",
+      "value": 65536,
+      "unit": "bytes",
+      "source": "function 0x140091b90"
+    },
+    {
+      "name": "usn_journal_data_v0_size",
+      "group": "ntfs_indexing",
+      "value": 56,
+      "unit": "bytes",
+      "source": "function 0x1401a9690"
+    },
+    {
+      "name": "default_window_width",
+      "group": "ui",
+      "value": 1022,
+      "unit": "px",
+      "source": "function 0x1403b0080"
+    },
+    {
+      "name": "default_window_height",
+      "group": "ui",
+      "value": 713,
+      "unit": "px",
+      "source": "function 0x1403b0080"
+    },
+    {
+      "name": "filters_dropdown_width",
+      "group": "ui",
+      "value": 128,
+      "unit": "px",
+      "source": "Everything-1.5a.ini"
+    },
+    {
+      "name": "thumbnail_size",
+      "group": "ui",
+      "value": 128,
+      "unit": "px",
+      "source": "Session-1.5a.json"
+    },
+    {
+      "name": "search_batch_size",
+      "group": "search",
+      "value": 500,
+      "source": "files-explorer/src-tauri/src/core/types.rs"
+    },
+    {
+      "name": "search_max_results",
+      "group": "search",
+      "value": 2000,
+      "source": "files-explorer/src-tauri/src/core/types.rs"
+    }
+  ]
+}

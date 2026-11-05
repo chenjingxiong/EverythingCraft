@@ -1,0 +1,45 @@
+{
+  "id": "ev_e6ba1b3824004585c708eb5e908d969e8b55777c726937dda09ed74e93bd38a2",
+  "subject": {
+    "kind": "pe",
+    "sha256": "c7cf745b3145eb1d923734fe0ae11d816c9fa1a2cfd78b3701e7ef1bd85bde01",
+    "name": "Everything.exe"
+  },
+  "operation": "native_function_pseudocode",
+  "params": {
+    "function": "0x1403b0080"
+  },
+  "result": {
+    "engine": "ghidra",
+    "entry": "0x1403b0080",
+    "function": "entry",
+    "pseudo_code": "\r\nvoid entry(void)\r\n\r\n{\r\n  FUN_1403b3d90();\r\n  FUN_1403afda0();\r\n  return;\r\n}\r\n\r\n",
+    "signature": "void entry(void);"
+  },
+  "summary": "Pseudo-C for entry from the Deep engine (9 lines).",
+  "confidence": "derived",
+  "authority": "original-files",
+  "environment": {
+    "clean_room": false,
+    "engine": "ghidra",
+    "engine_version": "12.1.4",
+    "host": "windows-x86_64"
+  },
+  "limitations": [
+    {
+      "code": "deep_engine",
+      "message": "the pseudo-C comes from the external Deep engine (Ghidra), not the original source"
+    }
+  ],
+  "coverage": {
+    "status": "unknown"
+  },
+  "locations": [
+    {
+      "kind": "address",
+      "value": "0x1403b0080"
+    }
+  ],
+  "links": [],
+  "carries_target_content": true
+}

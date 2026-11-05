@@ -1,0 +1,45 @@
+{
+  "id": "ev_25fd63509a7f538d2affc39f3f110432ea57c390eae352e765e086d7a407fdf0",
+  "subject": {
+    "kind": "pe",
+    "sha256": "c7cf745b3145eb1d923734fe0ae11d816c9fa1a2cfd78b3701e7ef1bd85bde01",
+    "name": "Everything.exe"
+  },
+  "operation": "native_function_pseudocode",
+  "params": {
+    "function": "0x1401a9690"
+  },
+  "result": {
+    "engine": "ghidra",
+    "entry": "0x1401a9690",
+    "function": "FUN_1401a9690",
+    "pseudo_code": "\r\nundefined8 FUN_1401a9690(undefined8 param_1)\r\n\r\n{\r\n  int iVar1;\r\n  DWORD DVar2;\r\n  undefined8 local_58;\r\n  undefined4 local_50;\r\n  undefined8 local_48 [8];\r\n  \r\n  iVar1 = FUN_1401b33b0(param_1,0x900f4,0,0,local_48,0x38,0,0);\r\n  if (iVar1 == 0) {\r\n    DVar2 = GetLastError();\r\n    if ((DVar2 != 0x49a) && (DVar2 != 0x49b)) {\r\n      DVar2 = GetLastError();\r\n      FUN_14015ebf0(\"DeviceIoControl(%p,FSCTL_QUERY_USN_JOURNAL,0,0,%p,%zu,0,0): %u: Failed to query USN Journal.\\n\"\r\n                    ,param_1,local_48,0x38,DVar2);\r\n      return 0;\r\n    }\r\n  }\r\n  else {\r\n    local_58 = local_48[0];\r\n    local_50 = 1;\r\n    iVar1 = FUN_1401b33b0(param_1,0x900f8,&local_58,0x10,0,0,0,0);\r\n    if (iVar1 == 0) {\r\n      DVar2 = GetLastError();\r\n      FUN_14015ec70(\"failed to query USN Journal %u\\n\",DVar2);\r\n      return 0;\r\n    }\r\n  }\r\n  return 1;\r\n}\r\n\r\n",
+    "signature": "undefined8 FUN_1401a9690(undefined8 param_1);"
+  },
+  "summary": "Pseudo-C for FUN_1401a9690 from the Deep engine (33 lines).",
+  "confidence": "derived",
+  "authority": "original-files",
+  "environment": {
+    "clean_room": false,
+    "engine": "ghidra",
+    "engine_version": "12.1.4",
+    "host": "windows-x86_64"
+  },
+  "limitations": [
+    {
+      "code": "deep_engine",
+      "message": "the pseudo-C comes from the external Deep engine (Ghidra), not the original source"
+    }
+  ],
+  "coverage": {
+    "status": "unknown"
+  },
+  "locations": [
+    {
+      "kind": "address",
+      "value": "0x1401a9690"
+    }
+  ],
+  "links": [],
+  "carries_target_content": true
+}

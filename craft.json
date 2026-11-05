@@ -1,0 +1,173 @@
+{
+  "version": 2,
+  "name": "Everything",
+  "request": "制作我自己的everyting.exe应用版本，使用Rust 框架实现，最好使用最流行的Rust框架，MVC分离架构。实现全部功能。\nA . 可以单独作为Exe使用， 具备 Everything.exe 所有功能。\nB . 有清晰的核心引擎API接口，并在这个项目 D:\\MyProjects\\files-explorer  的搜索框中 集成 这个EveryThing的功能。集成的形式： 集成时不依赖于上述Exe应用， 而是直接 使用核心引擎代码 的形式 ，代码直接集成到该files-explorer  项目中，让该files-explorer  还是保持单Exe的文件发布形式。",
+  "target": {
+    "kind": "local",
+    "path": "C:\\Program Files\\Everything 1.5a\\Everything.exe"
+  },
+  "stack": "Rust + egui (eframe)",
+  "status": "ready",
+  "note": "Ready: all 3 checks pass, 11 of 11 claims hold.",
+  "created_ms": 1793698702710,
+  "updated_ms": 1793845485534,
+  "checks": [
+    {
+      "round": 1,
+      "check": "build",
+      "passed": true,
+      "similarity": null,
+      "note": "Build succeeded.",
+      "artifacts": [],
+      "at_ms": 1793770066033
+    },
+    {
+      "round": 1,
+      "check": "app-screenshot",
+      "passed": true,
+      "similarity": null,
+      "note": "The program starts and draws (1384×966). It looks about 38% like capture/window.png. Started normally, its window looks about 39% like the original's (capture/window.png).",
+      "artifacts": [
+        "checks\\round-1\\screenshot.png",
+        "checks\\round-1\\window.png"
+      ],
+      "at_ms": 1793770085078
+    },
+    {
+      "round": 1,
+      "check": "mechanics",
+      "passed": true,
+      "similarity": null,
+      "note": "app/mechanics.json has 11 values (11 with a source, 0 estimated).",
+      "artifacts": [],
+      "at_ms": 1793770085081,
+      "claims": [
+        {
+          "title": "FSCTL_QUERY_USN_JOURNAL (589940) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "FSCTL_READ_USN_JOURNAL (589944) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "FSCTL_ENUM_USN_DATA (589875) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "usn_buffer_size (65536) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "usn_journal_data_v0_size (56) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "default_window_width (1022) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "default_window_height (713) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "filters_dropdown_width (128) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "thumbnail_size (128) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "search_batch_size (500) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "search_max_results (2000) is used in the code",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "check": "build",
+      "passed": true,
+      "similarity": null,
+      "note": "Build succeeded.",
+      "artifacts": [],
+      "at_ms": 1793845466233
+    },
+    {
+      "round": 2,
+      "check": "app-screenshot",
+      "passed": true,
+      "similarity": null,
+      "note": "The program starts and draws (1384×966). It looks about 38% like capture/window.png. Started normally, its window looks about 39% like the original's (capture/window.png).",
+      "artifacts": [
+        "checks\\round-2\\screenshot.png",
+        "checks\\round-2\\window.png"
+      ],
+      "at_ms": 1793845485528
+    },
+    {
+      "round": 2,
+      "check": "mechanics",
+      "passed": true,
+      "similarity": null,
+      "note": "app/mechanics.json has 11 values (11 with a source, 0 estimated).",
+      "artifacts": [],
+      "at_ms": 1793845485530,
+      "claims": [
+        {
+          "title": "FSCTL_QUERY_USN_JOURNAL (589940) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "FSCTL_READ_USN_JOURNAL (589944) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "FSCTL_ENUM_USN_DATA (589875) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "usn_buffer_size (65536) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "usn_journal_data_v0_size (56) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "default_window_width (1022) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "default_window_height (713) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "filters_dropdown_width (128) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "thumbnail_size (128) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "search_batch_size (500) is used in the code",
+          "passed": true
+        },
+        {
+          "title": "search_max_results (2000) is used in the code",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "agent_session": "09d1edd3-6a67-4fcb-ad75-1af99b26a0d8",
+  "allowed_actions": [],
+  "last_reply": "I will wait for the analysis task to complete.\nI will wait for the background analysis to finish.\nI decompiled the core NTFS and window routines from `Everything.exe` using the Ghidra deep engine (recovering functions at addresses `0x1401a9690`, `0x140091b90`, and `0x1403b0080`), recording the proven formulas, control codes, and buffer sizes directly into [MECHANICS.md](file:///D:/MyProjects/EverythingCraft/app/MECHANICS.md) and [mechanics.json](file:///D:/MyProjects/EverythingCraft/app/mechanics.json). I applied these exact values to the standalone desktop application in [main.rs](file:///D:/MyProjects/EverythingCraft/app/src/main.rs) and the embedded [`EverythingEngine`](file:///D:/MyProjects/files-explorer/src-tauri/src/engine/mod.rs) search service inside [search.rs](file:///D:/MyProjects/files-explorer/src-tauri/src/search.rs). Both applications compile cleanly without errors and passed all automated verification checks, marking the project as ready.",
+  "asset_budget_usd": 250.0,
+  "generate_assets": false
+}

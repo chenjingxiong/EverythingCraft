@@ -156,13 +156,19 @@ fn main() -> eframe::Result<()> {
     let width = if settings.window_width > 400.0 { settings.window_width } else { 1022.0 };
     let height = if settings.window_height > 300.0 { settings.window_height } else { 713.0 };
 
+    let icon_data = eframe::icon_data::from_png_bytes(include_bytes!("../assets/app.png")).ok();
+    let mut viewport = egui::ViewportBuilder::default()
+        .with_inner_size(vec2(width, height))
+        .with_min_inner_size(vec2(500.0, 350.0))
+        .with_title("Everything")
+        .with_active(true)
+        .with_visible(true);
+    if let Some(icon) = icon_data {
+        viewport = viewport.with_icon(icon);
+    }
+
     let native_options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size(vec2(width, height))
-            .with_min_inner_size(vec2(500.0, 350.0))
-            .with_title("Everything")
-            .with_active(true)
-            .with_visible(true),
+        viewport,
         ..Default::default()
     };
 

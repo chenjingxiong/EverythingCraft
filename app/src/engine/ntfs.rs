@@ -214,39 +214,44 @@ pub fn scan_volume_usn(drive_letter: char) -> Result<Vec<SearchResultEntry>, Str
             }
         }
 
+        const MFT_INDEX_MASK: u64 = 0x0000_FFFF_FFFF_FFFF;
+        const ROOT_MFT_INDEX: u64 = 5;
+
         let mut path_cache: HashMap<u64, String> = HashMap::with_capacity(raw_records.len() / 4);
         let root_drive = format!("{}:\\", drive_letter);
 
         let mut dir_map: HashMap<u64, (u64, String)> = HashMap::with_capacity(raw_records.len() / 5);
         for rec in &raw_records {
             if rec.is_dir {
-                dir_map.insert(rec.frn, (rec.parent_frn, rec.name.clone()));
+                dir_map.insert(
+                    rec.frn & MFT_INDEX_MASK,
+                    (rec.parent_frn & MFT_INDEX_MASK, rec.name.clone()),
+                );
             }
         }
 
         fn resolve_dir_path(
-            frn: u64,
+            frn_masked: u64,
             dir_map: &HashMap<u64, (u64, String)>,
             path_cache: &mut HashMap<u64, String>,
             root_drive: &str,
             depth: usize,
         ) -> String {
-            if depth > 64 {
+            if frn_masked == ROOT_MFT_INDEX || frn_masked == 0 || depth > 64 {
                 return root_drive.to_string();
             }
-            if let Some(cached) = path_cache.get(&frn) {
+            if let Some(cached) = path_cache.get(&frn_masked) {
                 return cached.clone();
             }
-            if let Some((parent_frn, name)) = dir_map.get(&frn) {
-                if *parent_frn == frn || *parent_frn == 0 {
-                    let res = root_drive.to_string();
-                    path_cache.insert(frn, res.clone());
-                    return res;
-                }
-                let parent_path = resolve_dir_path(*parent_frn, dir_map, path_cache, root_drive, depth + 1);
+            if let Some((parent_masked, name)) = dir_map.get(&frn_masked) {
+                let parent_path = if *parent_masked == ROOT_MFT_INDEX || *parent_masked == 0 || *parent_masked == frn_masked {
+                    root_drive.to_string()
+                } else {
+                    resolve_dir_path(*parent_masked, dir_map, path_cache, root_drive, depth + 1)
+                };
                 let clean_parent = parent_path.trim_end_matches('\\');
                 let full = format!("{}\\{}", clean_parent, name);
-                path_cache.insert(frn, full.clone());
+                path_cache.insert(frn_masked, full.clone());
                 return full;
             }
             root_drive.to_string()
@@ -256,10 +261,18 @@ pub fn scan_volume_usn(drive_letter: char) -> Result<Vec<SearchResultEntry>, Str
         let mut id_counter: u64 = 1;
 
         for rec in raw_records {
-            let parent_path = resolve_dir_path(rec.parent_frn, &dir_map, &mut path_cache, &root_drive, 0);
+            let parent_path = resolve_dir_path(
+                rec.parent_frn & MFT_INDEX_MASK,
+                &dir_map,
+                &mut path_cache,
+                &root_drive,
+                0,
+            );
             let clean_parent = parent_path.trim_end_matches('\\').to_string();
             let full_path = if clean_parent.is_empty() {
                 format!("{}:\\{}", drive_letter, rec.name)
+            } else if clean_parent.ends_with(':') {
+                format!("{}\\{}", clean_parent, rec.name)
             } else {
                 format!("{}\\{}", clean_parent, rec.name)
             };

@@ -116,9 +116,13 @@ impl AppController {
         model.is_indexing = true;
         let engine = model.engine.clone();
         let tx = self.event_tx.clone();
+        let local_drives = model.settings.selected_local_drives.clone();
+        let index_network = model.settings.index_network_drives;
+        let network_drives = model.settings.selected_network_drives.clone();
+        let use_usn = model.settings.index_ntfs;
 
         std::thread::spawn(move || {
-            match engine.index_all_drives() {
+            match engine.index_drives(&local_drives, index_network, &network_drives, use_usn) {
                 Ok(count) => {
                     let _ = tx.send(ControllerEvent::IndexingFinished(count));
                 }

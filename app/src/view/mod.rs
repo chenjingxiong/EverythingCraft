@@ -975,7 +975,7 @@ impl AppView {
                     match model.options_tab {
                         0 => Self::options_general(model, ui),
                         1 => Self::options_shortcuts(model, ui),
-                        2 => Self::options_index(model, ui),
+                        2 => Self::options_index(model, _controller, ui),
                         3 => Self::options_view(model, ui),
                         _ => Self::options_search(model, ui),
                     }
@@ -1154,7 +1154,7 @@ impl AppView {
         }
     }
 
-    fn options_index(model: &mut AppModel, ui: &mut Ui) {
+    fn options_index(model: &mut AppModel, controller: &mut AppController, ui: &mut Ui) {
         ui.heading(model.t("opt.index").to_string());
         ui.add_space(8.0);
         let t1 = model.t("opt.index_ntfs").to_string();
@@ -1163,7 +1163,71 @@ impl AppView {
         ui.checkbox(&mut model.settings.index_hidden, &t2);
         let t3 = model.t("opt.index_system").to_string();
         ui.checkbox(&mut model.settings.index_system, &t3);
+
         ui.add_space(8.0);
+        ui.separator();
+        ui.add_space(4.0);
+
+        // Local drives section
+        ui.label(RichText::new(model.t("opt.index_local_desc")).strong());
+        let local_drives = crate::engine::scanner::list_windows_drives();
+        ui.horizontal_wrapped(|ui| {
+            for ld in &local_drives {
+                let drive_str = ld.to_string_lossy().to_string();
+                let letter_str = drive_str.chars().take(2).collect::<String>();
+                let mut checked = model.settings.selected_local_drives.iter().any(|d| d.eq_ignore_ascii_case(&letter_str) || d.eq_ignore_ascii_case(&drive_str));
+                if ui.checkbox(&mut checked, &drive_str).changed() {
+                    if checked {
+                        if !model.settings.selected_local_drives.iter().any(|d| d.eq_ignore_ascii_case(&letter_str)) {
+                            model.settings.selected_local_drives.push(letter_str);
+                        }
+                    } else {
+                        model.settings.selected_local_drives.retain(|d| !d.eq_ignore_ascii_case(&letter_str) && !d.eq_ignore_ascii_case(&drive_str));
+                    }
+                    model.settings_dirty = true;
+                }
+            }
+        });
+
+        ui.add_space(8.0);
+        ui.separator();
+        ui.add_space(4.0);
+
+        // Network drives section
+        let t_net = model.t("opt.index_network").to_string();
+        ui.checkbox(&mut model.settings.index_network_drives, &t_net);
+        if model.settings.index_network_drives {
+            ui.label(RichText::new(model.t("opt.index_network_desc")).strong());
+            let net_drives = crate::engine::scanner::list_network_drives();
+            if net_drives.is_empty() {
+                ui.small(model.t("opt.no_network_drives"));
+            } else {
+                for nd in &net_drives {
+                    let display = if nd.remote_unc.is_empty() {
+                        nd.path.clone()
+                    } else {
+                        format!("{} ({})", nd.path, nd.remote_unc)
+                    };
+                    let drive_prefix = format!("{}:", nd.letter);
+                    let mut checked = model.settings.selected_network_drives.iter().any(|d| d.eq_ignore_ascii_case(&drive_prefix) || d.eq_ignore_ascii_case(&nd.path));
+                    if ui.checkbox(&mut checked, &display).changed() {
+                        if checked {
+                            if !model.settings.selected_network_drives.iter().any(|d| d.eq_ignore_ascii_case(&drive_prefix)) {
+                                model.settings.selected_network_drives.push(drive_prefix);
+                            }
+                        } else {
+                            model.settings.selected_network_drives.retain(|d| !d.eq_ignore_ascii_case(&drive_prefix) && !d.eq_ignore_ascii_case(&nd.path));
+                        }
+                        model.settings_dirty = true;
+                    }
+                }
+            }
+        }
+
+        ui.add_space(8.0);
+        ui.separator();
+        ui.add_space(4.0);
+
         ui.label(model.t("opt.exclude"));
         let mut exclude = model.settings.exclude_folders.join(";");
         let resp = ui.add(egui::TextEdit::singleline(&mut exclude).desired_width(f32::INFINITY));
@@ -1174,6 +1238,16 @@ impl AppView {
                 .filter(|s| !s.is_empty())
                 .collect();
         }
+
+        ui.add_space(10.0);
+        ui.horizontal(|ui| {
+            if ui.button(format!("🔄 {}", model.t("opt.rebuild_now"))).clicked() {
+                controller.start_background_indexing(model);
+            }
+            if model.is_indexing {
+                ui.label(RichText::new(model.t("tools.indexing")).color(Color32::from_rgb(255, 180, 0)));
+            }
+        });
     }
 
     fn options_view(model: &mut AppModel, ui: &mut Ui) {

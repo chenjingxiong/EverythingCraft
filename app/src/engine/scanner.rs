@@ -4,6 +4,84 @@ use std::sync::Arc;
 
 use super::types::SearchResultEntry;
 
+#[derive(Debug, Clone)]
+pub struct NetworkDriveInfo {
+    pub letter: char,
+    pub path: String,       // e.g. "Y:\"
+    pub remote_unc: String, // e.g. "\\192.168.9.6\nvme11-..."
+}
+
+pub fn get_remote_drive_target(drive_letter: char) -> Option<String> {
+    #[cfg(windows)]
+    {
+        use std::ffi::OsStr;
+        use std::os::windows::ffi::OsStrExt;
+        let local_name = format!("{}:", drive_letter);
+        let wide_local: Vec<u16> = OsStr::new(&local_name).encode_wide().chain(std::iter::once(0)).collect();
+        let mut buffer = [0u16; 512];
+        let mut buf_len = buffer.len() as u32;
+
+        extern "system" {
+            fn LoadLibraryA(lpLibFileName: *const u8) -> *mut core::ffi::c_void;
+            fn GetProcAddress(
+                hModule: *mut core::ffi::c_void,
+                lpProcName: *const u8,
+            ) -> *mut core::ffi::c_void;
+        }
+
+        unsafe {
+            let mpr = LoadLibraryA(b"mpr.dll\0".as_ptr());
+            if !mpr.is_null() {
+                let proc = GetProcAddress(mpr, b"WNetGetConnectionW\0".as_ptr());
+                if !proc.is_null() {
+                    type WNetFn = unsafe extern "system" fn(*const u16, *mut u16, *mut u32) -> u32;
+                    let f: WNetFn = std::mem::transmute(proc);
+                    if f(wide_local.as_ptr(), buffer.as_mut_ptr(), &mut buf_len) == 0 {
+                        let len = buffer.iter().position(|&c| c == 0).unwrap_or(0);
+                        if len > 0 {
+                            return Some(String::from_utf16_lossy(&buffer[..len]));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    let _ = drive_letter;
+    None
+}
+
+pub fn list_network_drives() -> Vec<NetworkDriveInfo> {
+    let mut network_drives = Vec::new();
+    #[cfg(windows)]
+    {
+        use std::ffi::OsStr;
+        use std::os::windows::ffi::OsStrExt;
+        extern "system" {
+            fn GetLogicalDrives() -> u32;
+            fn GetDriveTypeW(lprootpathname: *const u16) -> u32;
+        }
+        let mask = unsafe { GetLogicalDrives() };
+        for i in 0..26 {
+            if (mask & (1 << i)) != 0 {
+                let letter = (b'A' + i) as char;
+                let path_str = format!("{}:\\", letter);
+                let wide: Vec<u16> = OsStr::new(&path_str).encode_wide().chain(std::iter::once(0)).collect();
+                let dtype = unsafe { GetDriveTypeW(wide.as_ptr()) };
+                // 4 = DRIVE_REMOTE
+                if dtype == 4 {
+                    let remote_unc = get_remote_drive_target(letter).unwrap_or_default();
+                    network_drives.push(NetworkDriveInfo {
+                        letter,
+                        path: path_str,
+                        remote_unc,
+                    });
+                }
+            }
+        }
+    }
+    network_drives
+}
+
 pub fn list_windows_drives() -> Vec<PathBuf> {
     let mut drives = Vec::new();
     #[cfg(windows)]
@@ -31,8 +109,8 @@ pub fn list_windows_drives() -> Vec<PathBuf> {
                 let path_str = format!("{}:\\", letter);
                 let wide: Vec<u16> = OsStr::new(&path_str).encode_wide().chain(std::iter::once(0)).collect();
                 let dtype = unsafe { GetDriveTypeW(wide.as_ptr()) };
-                // 3 = DRIVE_FIXED. Only index fixed local drives automatically.
-                if dtype == 3 {
+                // 3 = DRIVE_FIXED, 2 = DRIVE_REMOVABLE
+                if dtype == 3 || dtype == 2 {
                     let mut flags = 0u32;
                     let ok = unsafe {
                         GetVolumeInformationW(
@@ -66,23 +144,6 @@ pub fn is_ignored_directory_name(name: &str) -> bool {
         "$RECYCLE.BIN"
             | "$Recycle.Bin"
             | "System Volume Information"
-            | "WinSxS"
-            | "servicing"
-            | "DriverStore"
-            | "Installer"
-            | "SoftwareDistribution"
-            | "Package Cache"
-            | ".git"
-            | "node_modules"
-            | "target"
-            | "dist"
-            | ".cache"
-            | "__pycache__"
-            | ".venv"
-            | "venv"
-            | "INetCache"
-            | "CrashDumps"
-            | "Temp"
     )
 }
 
@@ -116,8 +177,6 @@ pub fn scan_single_root_batched<F>(
 
     let mut stack = vec![root.to_path_buf()];
     let mut batch = Vec::with_capacity(batch_size.min(10_000));
-    let mut total_scanned = 0;
-    const MAX_FALLBACK_FILES_PER_DRIVE: usize = 100_000;
 
     let mut find_data: WIN32_FIND_DATAW = unsafe { std::mem::zeroed() };
 
@@ -131,7 +190,7 @@ pub fn scan_single_root_batched<F>(
     };
 
     while let Some(current_dir) = stack.pop() {
-        if cancel_flag.load(Ordering::Relaxed) || total_scanned >= MAX_FALLBACK_FILES_PER_DRIVE {
+        if cancel_flag.load(Ordering::Relaxed) {
             break;
         }
 
@@ -204,14 +263,8 @@ pub fn scan_single_root_batched<F>(
                         attributes: find_data.dwFileAttributes,
                     });
 
-                    total_scanned += 1;
-
                     if batch.len() >= batch_size {
                         on_batch(std::mem::take(&mut batch));
-                    }
-
-                    if total_scanned >= MAX_FALLBACK_FILES_PER_DRIVE {
-                        break;
                     }
                 }
             }
